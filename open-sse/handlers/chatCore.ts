@@ -516,6 +516,8 @@ export async function handleChatCore({
     defaultThinkingEffort,
   });
   let { provider, model, extendedContext } = modelInfo;
+  const getExecutorClientHeaders = () =>
+    buildExecutorClientHeaders(clientRawRequest?.headers, userAgent, { provider, body });
   // Keep the selected rule across format conversion, retries and refreshed credentials.
   // Each combo leg gets its own execution context; nothing is written to shared accounts.
   const reasoningRuleDirective = body?._omnirouteReasoningRule;
@@ -3207,10 +3209,7 @@ export async function handleChatCore({
                           log,
                           extendedContext,
                           upstreamExtraHeaders: buildUpstreamHeadersForExecute(modelToCall),
-                          clientHeaders: buildExecutorClientHeaders(
-                            clientRawRequest?.headers,
-                            userAgent
-                          ),
+                          clientHeaders: getExecutorClientHeaders(),
                           clientResponseFormat,
                           onCredentialsRefreshed,
                           skipUpstreamRetry,
@@ -3394,10 +3393,7 @@ export async function handleChatCore({
                               log,
                               extendedContext,
                               upstreamExtraHeaders: buildUpstreamHeadersForExecute(modelToCall),
-                              clientHeaders: buildExecutorClientHeaders(
-                                clientRawRequest?.headers,
-                                userAgent
-                              ),
+                              clientHeaders: getExecutorClientHeaders(),
                               clientResponseFormat,
                               onCredentialsRefreshed,
                               skipUpstreamRetry,
@@ -4509,7 +4505,7 @@ export async function handleChatCore({
                 log,
                 extendedContext,
                 upstreamExtraHeaders: buildUpstreamHeadersForExecute(retryModelId),
-                clientHeaders: buildExecutorClientHeaders(clientRawRequest?.headers, userAgent),
+                clientHeaders: getExecutorClientHeaders(),
                 clientResponseFormat,
                 onCredentialsRefreshed,
                 skipUpstreamRetry: isCombo,
