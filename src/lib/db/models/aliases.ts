@@ -22,7 +22,7 @@ export async function getModelAliases() {
 export async function setModelAlias(alias: string, model: unknown) {
   const db = getDbInstance();
   db.prepare(
-    "INSERT OR REPLACE INTO key_value (namespace, key, value) VALUES ('modelAliases', ?, ?)",
+    "INSERT OR REPLACE INTO key_value (namespace, key, value) VALUES ('modelAliases', ?, ?)"
   ).run(alias, JSON.stringify(model));
   finishModelCatalogWriteWithBackup();
 }
@@ -96,7 +96,9 @@ export function removeProviderAlias(providerId: string, alias: string): void {
   delete current[alias];
   const db = getDbInstance();
   if (Object.keys(current).length === 0) {
-    db.prepare("DELETE FROM key_value WHERE namespace = 'providerAliases' AND key = ?").run(providerId);
+    db.prepare("DELETE FROM key_value WHERE namespace = 'providerAliases' AND key = ?").run(
+      providerId
+    );
   } else {
     db.prepare(
       "INSERT OR REPLACE INTO key_value (namespace, key, value) VALUES ('providerAliases', ?, ?)"
