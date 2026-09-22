@@ -378,7 +378,10 @@ export function trackPendingRequest(
       pendingRequests.details[connectionId][modelKey].push(newDetail);
       pendingById.set(newDetail.id, newDetail);
       if (normalizedMetadata.correlationId) {
-        pendingIdByCorrelation.set(normalizedMetadata.correlationId, { id: newDetail.id, touchedAt: now });
+        pendingIdByCorrelation.set(normalizedMetadata.correlationId, {
+          id: newDetail.id,
+          touchedAt: now,
+        });
       }
       return newDetail.id;
     } else if (!started && nextCount >= 0) {
@@ -910,6 +913,7 @@ export async function getModelLatencyStats(
     latency_ms: number | null;
     ttft_ms: number | null;
     tokens_output: number | null;
+    tokens_reasoning: number | null;
   };
 
   const conditions = ["timestamp >= @sinceIso", "provider IS NOT NULL", "model IS NOT NULL"];
@@ -926,7 +930,7 @@ export async function getModelLatencyStats(
   const rows = db
     .prepare(
       `
-      SELECT provider, model, success, latency_ms, ttft_ms, tokens_output
+      SELECT provider, model, success, latency_ms, ttft_ms, tokens_output, tokens_reasoning
       FROM usage_history
       WHERE ${conditions.join(" AND ")}
       ORDER BY timestamp DESC
@@ -956,7 +960,8 @@ export async function getModelLatencyStats(
       toNumber(row.latency_ms),
       toNumber(row.ttft_ms),
       toNumber(row.tokens_output),
-      isSuccess
+      isSuccess,
+      toNumber(row.tokens_reasoning)
     );
   }
 
