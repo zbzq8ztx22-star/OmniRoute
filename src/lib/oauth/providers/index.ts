@@ -10,6 +10,7 @@
  * @module lib/oauth/providers/index
  */
 
+import { museCodeSubscription } from "./muse-code-subscription";
 import { claude } from "./claude";
 import { codex } from "./codex";
 import { antigravity } from "./antigravity";
@@ -33,6 +34,7 @@ import { zed } from "./zed";
 import { zedHosted } from "./zed-hosted";
 
 export const PROVIDERS = {
+  "muse-code-subscription": museCodeSubscription,
   claude,
   codex,
   antigravity,
