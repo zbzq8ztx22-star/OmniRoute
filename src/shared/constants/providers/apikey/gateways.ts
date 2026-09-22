@@ -964,7 +964,7 @@ export const APIKEY_PROVIDERS_GATEWAYS = {
     id: "aimlapi",
     serviceKinds: ["llm"],
     alias: "aiml",
-    name: "AI/ML API",
+    name: "aimlapi.com",
     icon: "hub",
     color: "#6366F1",
     textIcon: "AI",
