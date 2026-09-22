@@ -3128,6 +3128,8 @@
     "hermesRoleSkillsHubDesc": "Réasúnaíocht scileanna agus úsáid uirlisí",
     "hermesRoleApproval": "Ceadú",
     "hermesRoleApprovalDesc": "Cinntí maidir le sábháilteacht agus ceadú",
+    "hermesRoleReview": "Athbhreithniú",
+    "hermesRoleReviewDesc": "Athbhreithniú cóid iomlán fo-ghníomhaire",
     "hermesRoleMcp": "MCP",
     "hermesRoleMcpDesc": "Glaonna ar uirlisí freastalaí MCP",
     "hermesRoleTitleGeneration": "Giniúint Teidil",
@@ -3150,6 +3152,10 @@
     "hermesRoleMonitorDesc": "Monatóireacht chúlra",
     "hermesRoleBackgroundReview": "Athbhreithniú sa Chúlra",
     "hermesRoleBackgroundReviewDesc": "Athbhreithniú ar chód sa chúlra",
+    "hermesRoleMoaReference": "Tagairt MoA",
+    "hermesRoleMoaReferenceDesc": "Múnla tagartha Mixture-of-Agents",
+    "hermesRoleMoaAggregator": "Comhbhailitheoir MoA",
+    "hermesRoleMoaAggregatorDesc": "Múnla sintéise Mixture-of-Agents",
     "hermesSelectBeforePreview": "Roghnaigh samhlacha do na róil, nó cinntigh go bhfuil na róil lódáilte, sula ndéanfaidh tú réamhamharc.",
     "hermesPreviewFailed": "Theip ar ghiniúint an réamhamhairc",
     "hermesSavedTo": "Sábháladh in {path}",
@@ -11418,6 +11424,7 @@
         "clientResponse": "Freagra an Chliaint",
         "pipelineError": "Earráid Phíblíne"
       },
+      "payloadSizeLimitOmitted": "Fágadh an pálasta ar lár — sháraigh an rannán seo teorainn mhéid an logchomhaid glaonna (CALL_LOG_PIPELINE_MAX_SIZE_KB) agus níor stóráladh é; ní fíorearráid ón soláthraí é seo.",
       "payloadMissing": "Níl déantán mionsonraithe an phálasta ar fáil don iontráil logála seo a thuilleadh.",
       "payloadCorrupt": "Níorbh fhéidir déantán mionsonraithe an phálasta a pharsáil.",
       "notAvailable": "Neamhbhainteach",
@@ -11471,8 +11478,7 @@
       "correlationIdValue": "Aitheantas Comhghaoil: {id}",
       "detailedPayloadInfo": "Cumasaigh logáil mhionsonraithe ar dtús más mian leat an t-amharc ceithre chéim ar ualaí cliaint/soláthraí le haghaidh iarratais nua.",
       "copyAll": "Cóipeáil go léir",
-      "copiedAll": "Cóipeáilte go léir",
-      "payloadSizeLimitOmitted": "Fágadh an pálasta ar lár — sháraigh an rannán seo teorainn mhéid an logchomhaid glaonna (CALL_LOG_PIPELINE_MAX_SIZE_KB) agus níor stóráladh é; ní fíorearráid ón soláthraí é seo."
+      "copiedAll": "Cóipeáilte go léir"
     }
   },
   "proxyLogger": {

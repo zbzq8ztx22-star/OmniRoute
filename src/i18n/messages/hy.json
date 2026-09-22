@@ -3128,6 +3128,8 @@
     "hermesRoleSkillsHubDesc": "Հմտությունների և գործիքների օգտագործման տրամաբանական վերլուծություն",
     "hermesRoleApproval": "Հաստատում",
     "hermesRoleApprovalDesc": "Անվտանգության և հաստատման որոշումներ",
+    "hermesRoleReview": "Վերանայում",
+    "hermesRoleReviewDesc": "Ենթագործակալի կոդի ամբողջական վերանայում",
     "hermesRoleMcp": "MCP",
     "hermesRoleMcpDesc": "MCP սերվերի գործիքների կանչեր",
     "hermesRoleTitleGeneration": "Վերնագրի ստեղծում",
@@ -3150,6 +3152,10 @@
     "hermesRoleMonitorDesc": "Ֆոնային վերահսկում",
     "hermesRoleBackgroundReview": "Ֆոնային վերանայում",
     "hermesRoleBackgroundReviewDesc": "Կոդի ֆոնային վերանայում",
+    "hermesRoleMoaReference": "MoA հղում",
+    "hermesRoleMoaReferenceDesc": "Mixture-of-Agents հղման մոդել",
+    "hermesRoleMoaAggregator": "MoA ագրեգատոր",
+    "hermesRoleMoaAggregatorDesc": "Mixture-of-Agents սինթեզի մոդել",
     "hermesSelectBeforePreview": "Նախադիտումից առաջ ընտրեք մոդելներ դերերի համար կամ համոզվեք, որ դերերը բեռնված են։",
     "hermesPreviewFailed": "Չհաջողվեց ստեղծել նախադիտումը",
     "hermesSavedTo": "Պահված է {path}-ում",
@@ -11418,6 +11424,7 @@
         "clientResponse": "Հաճախորդի պատասխան",
         "pipelineError": "Մշակման շղթայի սխալ"
       },
+      "payloadSizeLimitOmitted": "Բովանդակությունը բաց է թողնվել — այս բաժինը գերազանցել է կանչերի մատյանի չափի սահմանը (CALL_LOG_PIPELINE_MAX_SIZE_KB) և չի պահպանվել. սա իրական վերին հոսքի սխալ չէ։",
       "payloadMissing": "Այս գրառման մանրամասն բեռնվածքը պարունակող արտեֆակտն այլևս հասանելի չէ։",
       "payloadCorrupt": "Չհաջողվեց վերլուծել մանրամասն բեռնվածքը պարունակող արտեֆակտը։",
       "notAvailable": "Կիրառելի չէ",
@@ -11471,8 +11478,7 @@
       "correlationIdValue": "Կապակցման ID՝ {id}",
       "detailedPayloadInfo": "Նոր հարցումների համար հաճախորդի/մատակարարի օգտակար բեռների քառափուլ տեսքը դիտելու նպատակով նախ միացրեք մանրամասն գրանցումը։",
       "copyAll": "Պատճենել ամբողջը",
-      "copiedAll": "Ամբողջը պատճենված է",
-      "payloadSizeLimitOmitted": "Բովանդակությունը բաց է թողնվել — այս բաժինը գերազանցել է կանչերի մատյանի չափի սահմանը (CALL_LOG_PIPELINE_MAX_SIZE_KB) և չի պահպանվել. սա իրական վերին հոսքի սխալ չէ։"
+      "copiedAll": "Ամբողջը պատճենված է"
     }
   },
   "proxyLogger": {

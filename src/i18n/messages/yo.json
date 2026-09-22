@@ -3128,6 +3128,8 @@
     "hermesRoleSkillsHubDesc": "Ìrònú nípa àwọn ọgbọ́n àti lílo irinṣẹ́",
     "hermesRoleApproval": "Ìfọwọ́sí",
     "hermesRoleApprovalDesc": "Àwọn ìpinnu ààbò àti ìfọwọ́sí",
+    "hermesRoleReview": "Àtúnyẹ̀wò",
+    "hermesRoleReviewDesc": "Àtúnyẹ̀wò kóòdù aṣojú abẹ́lé pípé",
     "hermesRoleMcp": "MCP",
     "hermesRoleMcpDesc": "Àwọn ìpè irinṣẹ́ olupin MCP",
     "hermesRoleTitleGeneration": "Ṣíṣe Àkọlé",
@@ -3150,6 +3152,10 @@
     "hermesRoleMonitorDesc": "Àbójútó abẹ́lẹ̀",
     "hermesRoleBackgroundReview": "Àyẹ̀wò Abẹ́lẹ̀",
     "hermesRoleBackgroundReviewDesc": "Àyẹ̀wò kóòdù abẹ́lẹ̀",
+    "hermesRoleMoaReference": "Ìtọ́kasí MoA",
+    "hermesRoleMoaReferenceDesc": "Àwòṣe ìtọ́kasí Mixture-of-Agents",
+    "hermesRoleMoaAggregator": "Agbajọpọ̀ MoA",
+    "hermesRoleMoaAggregatorDesc": "Àwòṣe ìṣàkópọ̀ Mixture-of-Agents",
     "hermesSelectBeforePreview": "Yan àwọn mọ́dẹ́lì fún àwọn ipa, tàbí rí i dájú pé àwọn ipa náà ti kojọpọ̀, kí o tó ṣe àwòtẹ́lẹ̀.",
     "hermesPreviewFailed": "Kò ṣeé ṣe láti ṣẹ̀dá àwòtẹ́lẹ̀",
     "hermesSavedTo": "A ti fi pamọ́ sí {path}",
@@ -11418,6 +11424,7 @@
         "clientResponse": "Ìdáhùn Oníbàárà",
         "pipelineError": "Àṣìṣe Pipeline"
       },
+      "payloadSizeLimitOmitted": "A fo ẹrù-ìsọfúnni sílẹ̀ — apá yìí kọjá ààlà ìwọ̀n àkọsílẹ̀ ìpè (CALL_LOG_PIPELINE_MAX_SIZE_KB), a kò sì tọ́jú rẹ̀; kì í ṣe àṣìṣe gidi láti ọ̀dọ̀ olùpèsè.",
       "payloadMissing": "Ohun èlò payload alálàyé kò sí mọ́ fún àkọsílẹ̀ yìí.",
       "payloadCorrupt": "A kò lè ṣe ìtúpalẹ̀ ohun èlò payload alálàyé náà.",
       "notAvailable": "Kò kan án",
@@ -11471,8 +11478,7 @@
       "correlationIdValue": "ID Ìbámu: {id}",
       "detailedPayloadInfo": "Kọ́kọ́ mú ìforúkọsílẹ̀ alálàyé ṣiṣẹ́ bí o bá fẹ́ àfihàn àkóónú client/provider onípele mẹ́rin fún àwọn ìbéèrè tuntun.",
       "copyAll": "Ṣe àdàkọ gbogbo rẹ̀",
-      "copiedAll": "A ti ṣe àdàkọ gbogbo rẹ̀",
-      "payloadSizeLimitOmitted": "A fo ẹrù-ìsọfúnni sílẹ̀ — apá yìí kọjá ààlà ìwọ̀n àkọsílẹ̀ ìpè (CALL_LOG_PIPELINE_MAX_SIZE_KB), a kò sì tọ́jú rẹ̀; kì í ṣe àṣìṣe gidi láti ọ̀dọ̀ olùpèsè."
+      "copiedAll": "A ti ṣe àdàkọ gbogbo rẹ̀"
     }
   },
   "proxyLogger": {
