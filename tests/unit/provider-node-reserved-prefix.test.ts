@@ -189,7 +189,17 @@ test("shared set size includes live REGISTRY and retired Designer + Felo + Qwen 
   // alias "pepper" from the REGISTRY walk (414 -> 412) — the two land back on the same total.
   // #12648 registers xKiro: id "xkiro" with no separate alias — a single REGISTRY
   // member (412 -> 413).
-  assert.equal(RESERVED_PREFIX_COUNT, 413);
+  // notrack-web (#12534): registry entry registers its id "notrack-web" + alias "ntw"
+  // (413 → 415). Do not fold this into a generic catalog bump — the dedicated
+  // notrack-web prefix test below is the regression lock for this provider.
+  assert.equal(RESERVED_PREFIX_COUNT, 415);
+});
+
+test("notrack-web registry id and alias stay reserved", () => {
+  assert.equal(RESERVED_PROVIDER_PREFIXES.has("notrack-web"), true);
+  assert.equal(RESERVED_PROVIDER_PREFIXES.has("ntw"), true);
+  assert.equal(isReservedProviderPrefix("notrack-web"), true);
+  assert.equal(isReservedProviderPrefix("ntw"), true);
 });
 
 test("isReservedProviderPrefix rejects non-string input", () => {
