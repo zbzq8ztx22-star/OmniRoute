@@ -30,6 +30,9 @@ export const COMBO_SKIP_REASONS = [
   "concurrency_cap",
   "admission_lane",
   "predictive_ttft",
+  "auto_resilience_filter",
+  "auto_strict_zero_cost",
+  "auto_candidate_filter",
 ] as const;
 
 export type ComboSkipReason = (typeof COMBO_SKIP_REASONS)[number];
@@ -52,18 +55,57 @@ export interface ComboTraceEntry {
   detail?: string;
 }
 
+export const AUTO_EVALUATION_STAGES = [
+  "resilience",
+  "paid_only",
+  "model_lockout",
+  "model_exposure",
+  "strict_zero_cost",
+  "tos",
+  "candidate_override",
+  "category_tier",
+  "subscription_ladder",
+] as const;
+
+export type AutoEvaluationStage = (typeof AUTO_EVALUATION_STAGES)[number];
+
+export interface AutoEvaluationCandidate {
+  target: string;
+  provider: string;
+  model: string;
+  connectionScope: "none" | "noauth" | "single" | "multiple";
+}
+
+export interface AutoEvaluationTransition {
+  target: string;
+  stage: AutoEvaluationStage | "dispatch";
+  outcome: "excluded" | "narrowed" | "retained";
+  reason?: ComboSkipReason;
+  detail?: string;
+  ts: number;
+}
+
+export interface AutoEvaluationTrace {
+  schemaVersion: 1;
+  stages: AutoEvaluationStage[];
+  candidates: AutoEvaluationCandidate[];
+  transitions: AutoEvaluationTransition[];
+}
+
 export interface ComboTrace {
   invocationId: string;
   createdAt: number;
   strategy: string | null;
   comboName: string | null;
   decisions: ComboTraceEntry[];
+  autoEvaluation: AutoEvaluationTrace | null;
   terminal: { status: number | null; errorClass: string | null } | null;
 }
 
 const TRACE_TTL_MS = 30 * 60 * 1000;
 const MAX_TRACES = 2000;
 const traces = new Map<string, ComboTrace>();
+let forceAutoEvaluationWriteFailureForTests = false;
 
 export function createInvocationId(): string {
   return `combo-${randomUUID()}`;
@@ -76,6 +118,192 @@ function isComboSkipReason(value: unknown): value is ComboSkipReason {
 /** Test hook: clear the in-memory store. */
 export function resetComboTraceStore(): void {
   traces.clear();
+  forceAutoEvaluationWriteFailureForTests = false;
+}
+
+/** Test hook: force Auto-evaluation trace writes to fail without affecting routing. */
+export function setAutoEvaluationWriteFailureForTests(enabled: boolean): void {
+  forceAutoEvaluationWriteFailureForTests = enabled;
+}
+
+function bestEffortAutoEvaluationWrite(write: () => void): void {
+  try {
+    if (forceAutoEvaluationWriteFailureForTests) {
+      throw new Error("forced Auto evaluation trace write failure");
+    }
+    write();
+  } catch {
+    // Diagnostic tracing is fail-open by contract.
+  }
+}
+
+export function startAutoEvaluationTrace(invocationId: string): void {
+  bestEffortAutoEvaluationWrite(() => {
+    const trace = traces.get(invocationId);
+    if (!trace || trace.autoEvaluation) return;
+    trace.autoEvaluation = {
+      schemaVersion: 1,
+      stages: [],
+      candidates: [],
+      transitions: [],
+    };
+  });
+}
+
+type AutoTraceCandidate = {
+  provider: string;
+  model: string;
+  modelStr?: string;
+  connectionId?: string | null;
+  allowedConnectionIds?: string[];
+};
+
+function autoTarget(candidate: AutoTraceCandidate): string {
+  return candidate.modelStr ?? `${candidate.provider}/${candidate.model}`;
+}
+
+function autoScope(
+  candidate: AutoTraceCandidate
+): AutoEvaluationCandidate["connectionScope"] {
+  if (candidate.connectionId === "noauth") return "noauth";
+  if (candidate.connectionId) return "single";
+  const count = candidate.allowedConnectionIds?.length ?? 0;
+  return count > 1 ? "multiple" : count === 1 ? "single" : "none";
+}
+
+function withAutoEvaluation(
+  invocationId: string | undefined,
+  write: (evaluation: AutoEvaluationTrace) => void
+): void {
+  if (!invocationId) return;
+  bestEffortAutoEvaluationWrite(() => {
+    const evaluation = traces.get(invocationId)?.autoEvaluation;
+    if (evaluation) write(evaluation);
+  });
+}
+
+function markAutoStage(evaluation: AutoEvaluationTrace, stage: AutoEvaluationStage): void {
+  if (!evaluation.stages.includes(stage)) evaluation.stages.push(stage);
+}
+
+function pushAutoTransition(
+  evaluation: AutoEvaluationTrace,
+  transition: Omit<AutoEvaluationTransition, "ts">
+): void {
+  if (
+    evaluation.transitions.some(
+      (existing) =>
+        existing.target === transition.target &&
+        existing.stage === transition.stage &&
+        existing.outcome === transition.outcome
+    )
+  ) return;
+  evaluation.transitions.push({ ...transition, ts: Date.now() });
+}
+
+export function recordAutoCandidatePool(
+  invocationId: string | undefined,
+  pool: readonly AutoTraceCandidate[]
+): void {
+  withAutoEvaluation(invocationId, (evaluation) => {
+    for (const candidate of pool) {
+      const entry: AutoEvaluationCandidate = {
+        target: autoTarget(candidate),
+        provider: candidate.provider,
+        model: candidate.model,
+        connectionScope: autoScope(candidate),
+      };
+      if (!evaluation.candidates.some((existing) =>
+        existing.target === entry.target &&
+        existing.provider === entry.provider &&
+        existing.model === entry.model &&
+        existing.connectionScope === entry.connectionScope
+      )) evaluation.candidates.push(entry);
+    }
+  });
+}
+
+export function recordAutoStage(
+  invocationId: string | undefined,
+  stage: AutoEvaluationStage
+): void {
+  withAutoEvaluation(invocationId, (evaluation) => markAutoStage(evaluation, stage));
+}
+
+export function recordAutoExclusion(
+  invocationId: string | undefined,
+  candidate: AutoTraceCandidate,
+  stage: AutoEvaluationStage,
+  reason: ComboSkipReason,
+  detail?: string
+): void {
+  withAutoEvaluation(invocationId, (evaluation) => {
+    markAutoStage(evaluation, stage);
+    pushAutoTransition(evaluation, {
+      target: autoTarget(candidate),
+      stage,
+      outcome: "excluded",
+      reason,
+      ...(detail ? { detail } : {}),
+    });
+  });
+}
+
+export function recordAutoNarrowing(
+  invocationId: string | undefined,
+  candidate: AutoTraceCandidate,
+  stage: AutoEvaluationStage,
+  reason: ComboSkipReason,
+  detail?: string
+): void {
+  withAutoEvaluation(invocationId, (evaluation) => {
+    markAutoStage(evaluation, stage);
+    pushAutoTransition(evaluation, {
+      target: autoTarget(candidate),
+      stage,
+      outcome: "narrowed",
+      reason,
+      ...(detail ? { detail } : {}),
+    });
+  });
+}
+
+export function recordAutoDroppedCandidates(
+  invocationId: string | undefined,
+  before: readonly AutoTraceCandidate[],
+  after: readonly AutoTraceCandidate[],
+  stage: AutoEvaluationStage
+): void {
+  withAutoEvaluation(invocationId, (evaluation) => {
+    markAutoStage(evaluation, stage);
+    if (before === after) return;
+    const surviving = new Set(after.map(autoTarget));
+    for (const candidate of before) {
+      if (!surviving.has(autoTarget(candidate))) {
+        pushAutoTransition(evaluation, {
+          target: autoTarget(candidate),
+          stage,
+          outcome: "excluded",
+          reason: "auto_candidate_filter",
+        });
+      }
+    }
+  });
+}
+
+export function recordAutoSurvivors(
+  invocationId: string | undefined,
+  pool: readonly AutoTraceCandidate[]
+): void {
+  withAutoEvaluation(invocationId, (evaluation) => {
+    for (const candidate of pool) {
+      pushAutoTransition(evaluation, {
+        target: autoTarget(candidate),
+        stage: "dispatch",
+        outcome: "retained",
+      });
+    }
+  });
 }
 
 export function startComboTrace(
@@ -106,6 +334,7 @@ export function startComboTrace(
       strategy: meta.strategy ?? null,
       comboName: meta.comboName ?? null,
       decisions: [],
+      autoEvaluation: null,
       terminal: null,
     });
   }
