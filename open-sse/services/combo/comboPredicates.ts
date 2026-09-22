@@ -19,6 +19,11 @@ import {
 import {
   CONTEXT_OVERFLOW_PATTERNS,
   MODEL_ACCESS_DENIED_PATTERNS,
+  PARAM_VALIDATION_PATTERNS,
+  RATE_LIMIT_TEXT_PATTERNS,
+  AUTH_CREDENTIAL_ERROR_PATTERNS,
+  isProviderModelUnsupported400,
+  isRequestScoped400,
   cooldownUntilMs,
 } from "../accountFallback.ts";
 import { isResourceNotFoundResponse } from "../errorClassifier.ts";
@@ -342,11 +347,38 @@ export function shouldSkipConnDisable(
     errorCode?: string | null;
     errorType?: string | null;
     error?: unknown;
+    rawMessage?: string | null;
   },
   is401: boolean,
   hasExtraKeys: boolean,
   provider: string
 ): boolean {
+  let errorText = "";
+  if (typeof result.rawMessage === "string") {
+    errorText = result.rawMessage;
+  } else if (typeof result.error === "string") {
+    errorText = result.error;
+  } else if (result.error instanceof Error) {
+    errorText = result.error.message;
+  } else if (result.error && typeof result.error === "object") {
+    const errObj = result.error as Record<string, unknown>;
+    if (typeof errObj.message === "string") {
+      errorText = errObj.message;
+    } else if (typeof errObj.error === "string") {
+      errorText = errObj.error;
+    }
+  }
+  const isReqScoped400 =
+    isRequestScoped400(result.status, errorText) ||
+    isProviderModelUnsupported400(result.status, errorText) ||
+    isParamValidation400(errorText) ||
+    (result.status === 400 &&
+      !RATE_LIMIT_TEXT_PATTERNS.some((p) => p.test(errorText)) &&
+      !AUTH_CREDENTIAL_ERROR_PATTERNS.some((p) => p.test(errorText)) &&
+      (isInputBoundRequestFailure({ code: result.errorCode, type: result.errorType }) ||
+        result.errorCode === "context_length_exceeded" ||
+        result.errorType === "context_length_exceeded"));
+
   return (
     result.status === 499 ||
     result.errorCode === "client_disconnected" ||
@@ -360,7 +392,8 @@ export function shouldSkipConnDisable(
     result.errorType === "plugin_block" ||
     (is401 && hasExtraKeys) ||
     isRequestScopedUpstreamFailure({ code: result.errorCode, type: result.errorType }) ||
-    isSelfInflictedUpstreamTimeout(result.status, result.errorType, provider)
+    isSelfInflictedUpstreamTimeout(result.status, result.errorType, provider) ||
+    isReqScoped400
   );
 }
 
@@ -648,7 +681,8 @@ export function isParamValidation400(errorText: string | null | undefined): bool
   return (
     /\bmax_tokens\b.*(?:illegal|must|range|invalid)/i.test(text) ||
     /\bparameter is illegal\b/i.test(text) ||
-    /\bis illegal.*range\b/i.test(text)
+    /\bis illegal.*range\b/i.test(text) ||
+    PARAM_VALIDATION_PATTERNS.some((p) => p.test(text))
   );
 }
 
