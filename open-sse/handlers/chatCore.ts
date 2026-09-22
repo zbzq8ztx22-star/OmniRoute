@@ -46,6 +46,7 @@ import { enforceOutputTokenBudget } from "./chatCore/outputTokenBudget.ts";
 import { maybeConvertJsonBodyToSse } from "./chatCore/jsonBodyToSse.ts";
 import { assembleStreamingResponseHeaders } from "./chatCore/streamingResponseHeaders.ts";
 import { storeStreamingSemanticCacheResponse } from "./chatCore/streamingSemanticCacheStore.ts";
+import { captureStreamReasoningForReplay } from "./chatCore/streamReasoningCapture.ts";
 import { assembleStreamingPipeline } from "./chatCore/streamingPipeline.ts";
 import { sanitizeChatRequestBody } from "./chatCore/sanitization.ts";
 import {
@@ -344,16 +345,10 @@ import {
   resolveReportedServiceTier as resolveReportedServiceTierFor,
   type EffectiveServiceTier,
 } from "./chatCore/serviceTier.ts";
-import {
-  cacheReasoningFromAssistantMessage,
-  requiresReasoningReplay,
-} from "../services/reasoningCache.ts";
 import { isCompactResponsesEndpoint } from "../executors/codex.ts";
 import { persistCodexChildQuotaResponse } from "../services/codexAccount/index.ts";
 import { invalidateCodexQuotaCache } from "../services/codexQuotaFetcher.ts";
 import { invalidateGenericQuotaCacheOnStatus } from "../services/genericQuotaFetcher.ts";
-import { translateNonStreamingResponse } from "./responseTranslator.ts";
-import { extractToolSchemaMap } from "../translator/response/openai-responses/toolSchemas.ts";
 import { extractUsageFromResponse } from "./usageExtractor.ts";
 import {
   withRateLimit,
@@ -736,6 +731,7 @@ export async function handleChatCore({
     effectiveServiceTier,
     startTime,
     log,
+    videoTranscriptSensitive: videoBridgeObserved,
   });
   if (idempotencyHit) {
     return idempotencyHit;
@@ -1293,6 +1289,7 @@ export async function handleChatCore({
     apiKeyId: apiKeyInfo?.id ?? undefined,
     cacheDefaultMode: (apiKeyInfo as { cacheDefaultMode?: "legacy" | "bypass" } | null)
       ?.cacheDefaultMode,
+    videoTranscriptSensitive: videoBridgeObserved,
   });
   if (cacheHit) {
     return cacheHit;
@@ -2379,6 +2376,7 @@ export async function handleChatCore({
             preserveCacheControl,
             copilotClient: copilotCompatibleReasoning,
             reasoningCacheScope,
+            videoTranscriptSensitive: videoBridgeObserved,
           }
         );
       }
@@ -2596,6 +2594,7 @@ export async function handleChatCore({
           signatureNamespace: connectionId,
           copilotClient: copilotCompatibleReasoning,
           reasoningCacheScope,
+          videoTranscriptSensitive: videoBridgeObserved,
           onReasoningReplayHistory: (messages) => {
             reasoningReplayHistory = messages;
           },
@@ -5089,6 +5088,7 @@ export async function handleChatCore({
         requestToolIdentityMap,
         reasoningCacheScope,
         reasoningReplayHistory,
+        videoTranscriptSensitive: videoBridgeObserved,
         clientHeaders: clientRawRequest?.headers ?? null,
         isClaudeCodeCompatible,
         log,
@@ -5262,6 +5262,7 @@ export async function handleChatCore({
                 requestToolIdentityMap,
                 reasoningCacheScope,
                 reasoningReplayHistory,
+                videoTranscriptSensitive: videoBridgeObserved,
                 clientHeaders: clientRawRequest?.headers ?? null,
                 isClaudeCodeCompatible,
                 log,
@@ -5592,6 +5593,7 @@ export async function handleChatCore({
         apiKeyId: apiKeyInfo?.id ?? undefined,
         usage,
         log,
+        videoTranscriptSensitive: videoBridgeObserved,
       });
 
       // ── Phase 9.2: Save for idempotency ──
@@ -5891,39 +5893,19 @@ export async function handleChatCore({
       });
     }
 
-    // Reasoning Replay Cache (#1628): Capture reasoning_content from streaming responses
-    // with tool_calls so it can be replayed on subsequent turns (DeepSeek V4, Kimi K2, etc.)
     if (normalizedStreamStatus === 200 && streamResponseBody) {
-      try {
-        const streamBody = streamResponseBody as Record<string, unknown>;
-        const cacheStreamBody = Array.isArray(streamBody.choices)
-          ? streamBody
-          : needsTranslation(clientResponseFormat, FORMATS.OPENAI)
-            ? (translateNonStreamingResponse(
-                streamBody,
-                clientResponseFormat,
-                FORMATS.OPENAI,
-                responseToolNameMap,
-                extractToolSchemaMap(finalBody || translatedBody || body)
-              ) as Record<string, unknown>)
-            : streamBody;
-        const choices = cacheStreamBody.choices as
-          { message?: Record<string, unknown> }[] | undefined;
-        const msg = choices?.[0]?.message;
-        // Responses-shaped bodies carry `input`, not `messages` — use the pivot
-        // transcript translateRequest reported so plain-turn keys match the read side.
-        const historyMessages =
-          (translatedBody as { messages?: unknown[] } | null | undefined)?.messages ??
-          reasoningReplayHistory;
-        if (requiresReasoningReplay({ provider, model })) {
-          cacheReasoningFromAssistantMessage(msg, provider, model, {
-            scope: reasoningCacheScope,
-            historyMessages: Array.isArray(historyMessages) ? historyMessages : [],
-          });
-        }
-      } catch {
-        // Cache capture is non-critical — never block the stream
-      }
+      captureStreamReasoningForReplay({
+        streamResponseBody,
+        clientResponseFormat,
+        responseToolNameMap,
+        providerRequestBody: finalBody || translatedBody || body,
+        translatedBody,
+        reasoningReplayHistory,
+        provider,
+        model,
+        reasoningCacheScope,
+        videoTranscriptSensitive: videoBridgeObserved,
+      });
     }
     effectiveServiceTier = resolveReportedServiceTier(streamResponseBody) ?? effectiveServiceTier;
 
@@ -6096,6 +6078,7 @@ export async function handleChatCore({
       apiKeyId: apiKeyInfo?.id ?? undefined,
       streamUsage,
       log,
+      videoTranscriptSensitive: videoBridgeObserved,
     });
 
     // Plugin onStreamComplete hook — fire-and-forget, fail-open (#9571)
