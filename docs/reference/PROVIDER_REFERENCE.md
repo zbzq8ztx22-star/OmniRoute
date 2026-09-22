@@ -1,16 +1,16 @@
 ---
 title: "Provider Reference"
 version: 3.8.51
-lastUpdated: 2026-09-20
+lastUpdated: 2026-09-22
 ---
 
 # Provider Reference
 
 > **Auto-generated** from `src/shared/constants/providers.ts` — do not edit by hand.
 > Regenerate with: `npm run gen:provider-reference`
-> **Last generated:** 2026-09-20
+> **Last generated:** 2026-09-22
 
-Total providers: **360**. See category breakdown below.
+Total providers: **359**. See category breakdown below.
 
 ## Categories
 
@@ -49,13 +49,12 @@ Use the dashboard at `/dashboard/providers` to enable, configure, and test each 
 | `veoaifree-web` | `veo-free` | Veo AI Free | No-auth, video | [link](https://veoaifree.com) | No auth required. Rate limited to 6 requests/hour per IP. | — |
 | `zcode` | `zc` | ZCode (GLM Coding Plan) | No-auth | [link](https://zcode.z.ai) | No API key stored by OmniRoute. The local ZCode app-server uses the existing builtin:zai-coding-plan login. | — |
 
-## OAuth Providers (24)
+## OAuth Providers (23)
 
 | ID | Alias | Name | Tags | Website | Notes |
 |----|-------|------|------|---------|-------|
-| `agy` | `agy` | Antigravity CLI | OAuth | [link](https://antigravity.google) | Import your Antigravity CLI (`agy`) login (paste/upload its token file), auto-detect a local CLI login, or sign in with Google. Shares the Antigravity backend (incl. Claude models). |
 | `amazon-q` | `aq` | Amazon Q | OAuth | [link](https://aws.amazon.com/q/developer/) | Uses the same AWS Builder ID or imported refresh-token flow as Kiro, but keeps Amazon Q connections separate. |
-| `antigravity` | — | Antigravity | OAuth | — | — |
+| `antigravity` | `agy` | Antigravity | OAuth | [link](https://antigravity.google) | Import your Antigravity CLI (`agy`) login (paste/upload its token file), auto-detect a local CLI login, or sign in with Google. Uses the same Cloud Code backend (incl. Claude models). |
 | `claude` | `cc` | Claude Code | OAuth | — | — |
 | `cline` | `cl` | Cline | OAuth | — | — |
 | `clinepass` | `cp` | ClinePass | OAuth | [link](https://cline.bot/cline-pass) | ClinePass is Cline's $9.99/mo subscription bundling 10 open coding models. Sign in with your Cline account (same login as the Cline CLI/IDE), or paste a direct ClinePass API key (app.cline.bot → Settings → API Keys). A ClinePass subscription unlocks the cline-pass/* models. Reuses the Cline WorkOS OAuth flow. |
@@ -448,7 +447,7 @@ Use the dashboard at `/dashboard/providers` to enable, configure, and test each 
 
 - Catalog: [`src/shared/constants/providers.ts`](../../src/shared/constants/providers.ts)
 - Registry (per-model details): [`open-sse/config/providerRegistry.ts`](../../open-sse/config/providerRegistry.ts)
-- Executors: [`open-sse/executors/`](../../open-sse/executors/) (121 implementations)
+- Executors: [`open-sse/executors/`](../../open-sse/executors/) (124 implementations)
 - Translators: [`open-sse/translator/`](../../open-sse/translator/)
 
 ## See Also
