@@ -262,6 +262,7 @@ import {
   type PersistAttemptLogsArgs,
 } from "./chatCore/attemptLogging.ts";
 import { stageTrace } from "./chatCore/stageTrace.ts";
+import { createTraceId } from "./chatCore/traceId.ts";
 import { attachCompressionUsageReceiptAfterAnalytics as attachCompressionUsageReceiptAfterAnalyticsFor } from "./chatCore/compressionUsageReceipt.ts";
 import { prepareUpstreamBody } from "./chatCore/upstreamBody.ts";
 import { getQuotaScopeLabelForProvider } from "../services/antigravityQuotaFamily.ts";
@@ -542,11 +543,11 @@ export async function handleChatCore({
   );
   const isModelScope = () => isModelScopeProvider(provider, credentials?.providerSpecificData);
   const startTime = Date.now();
-  // Per-request trace id + checkpoint helper. Lets us see exactly which await
-  // a hung request was sitting on in `[STAGE_TRACE]` log lines. Uses crypto RNG
-  // (not Math.random) purely to satisfy CodeQL js/insecure-randomness — this id
-  // is a log-correlation token, not a security secret.
-  const traceId = globalThis.crypto.randomUUID().slice(0, 6);
+  // Per-attempt trace id + checkpoint helper. Lets us see exactly which await a
+  // hung request was sitting on in `[STAGE_TRACE]` log lines, and doubles as the
+  // `call_logs.id` primary key — see createTraceId for why its width matters
+  // (#14338).
+  const traceId = createTraceId();
   // Emit request.started event for real-time dashboard
   setImmediate(() => {
     emit("request.started", {
