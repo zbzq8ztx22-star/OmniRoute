@@ -628,3 +628,40 @@ test("Ollama Cloud projects native efforts for base, tagged, and combo models", 
     assert.deepEqual(capabilitiesFor(modelId).effort_tiers, narrowEfforts, modelId);
   }
 });
+
+test("single-target combo advertises env CONTEXT_LENGTH_ override above the canonical window", async () => {
+  // #13870: env `CONTEXT_LENGTH_*` has the highest priority in resolveTokenLimit(),
+  // but combo catalog metadata resolved it through getSourcedTokenLimit(), which
+  // returned the canonical (static/DB) window early and never consulted the env.
+  // Only the direct model went through the env-aware path, so combo and member
+  // advertised different context windows.
+  const envOverride = 333000;
+  process.env.CONTEXT_LENGTH_CODEX = String(envOverride);
+  try {
+    await combosDb.createCombo({
+      name: "gpt-5.6-env-override-combo",
+      strategy: "auto",
+      models: ["codex/gpt-5.6-sol"],
+    });
+
+    const response = await catalog.getUnifiedModelsResponse(
+      new Request("http://localhost/api/v1/models")
+    );
+    const body = (await response.json()) as { data: Array<Record<string, unknown>> };
+    const direct = body.data.find((item) => item.id === "cx/gpt-5.6-sol");
+    const combo = body.data.find((item) => item.id === "gpt-5.6-env-override-combo");
+
+    assert.equal(response.status, 200);
+    assert.ok(direct, "direct model missing from catalog");
+    assert.ok(combo, "combo missing from catalog");
+    assert.equal(direct?.context_length, envOverride);
+    assert.equal(
+      combo?.context_length,
+      envOverride,
+      "combo must advertise the env override, not the static canonical window"
+    );
+    assert.equal(combo?.max_input_tokens, envOverride);
+  } finally {
+    delete process.env.CONTEXT_LENGTH_CODEX;
+  }
+});

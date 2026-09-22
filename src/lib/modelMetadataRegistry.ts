@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { parseModel } from "@omniroute/open-sse/services/model.ts";
+import { getEnvOverride } from "@omniroute/open-sse/services/contextManager";
 import { getModelInfo } from "@/sse/services/model";
 import { getModelAliases } from "@/lib/db/models";
 import {
@@ -547,7 +548,14 @@ export function enrichCatalogModelEntry<T extends JsonRecord>(
     nextEntry.output_modalities = metadata.modalities.output;
   }
 
-  if (
+  const envContextWindow =
+    getEnvOverride(provider) ??
+    (publicProvider && publicProvider !== provider ? getEnvOverride(publicProvider) : null);
+  // #13870: env CONTEXT_LENGTH_* is the highest-priority context source (above
+  // canonical/DB), so apply it to every surface before the metadata chain.
+  if (envContextWindow !== null) {
+    nextEntry.context_length = envContextWindow;
+  } else if (
     !specialtySurface &&
     (typeof nextEntry.context_length !== "number" ||
       authoritativeContextWindow !== null ||

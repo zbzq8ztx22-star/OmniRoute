@@ -27,7 +27,7 @@ const DEFAULT_LIMITS: Record<string, number> = {
 };
 
 // Environment variable overrides (highest priority)
-function getEnvOverride(provider: string): number | null {
+export function getEnvOverride(provider: string): number | null {
   const envKey = `CONTEXT_LENGTH_${provider.toUpperCase().replace(/[^A-Z0-9]/g, "_")}`;
   const envValue = process.env[envKey];
   if (envValue) {
@@ -349,6 +349,12 @@ export function getSourcedTokenLimit(
   canonicalWindow?: unknown,
   snapshot?: ModelCapabilityResolutionSnapshot | null
 ): number | undefined {
+  // Environment `CONTEXT_LENGTH_*` overrides are the highest-priority source in
+  // resolveTokenLimit(); the canonical window only reflects static/registry/DB
+  // sources, so honor the env first. #13870: combo catalog rows advertised the
+  // static window because the early canonical return bypassed the env check.
+  const envOverride = getEnvOverride(provider);
+  if (envOverride) return envOverride;
   if (
     typeof canonicalWindow === "number" &&
     Number.isFinite(canonicalWindow) &&

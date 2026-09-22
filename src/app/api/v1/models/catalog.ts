@@ -638,8 +638,14 @@ async function buildUnifiedModelsResponseCore(
         modelId,
         canonical.limits.contextWindow
       );
+      // #13870: the input cap must never exceed the advertised window.
+      // canonical.limits.maxInputTokens already reflects DB overrides (the
+      // capabilities layer clamps), but env CONTEXT_LENGTH_* overrides only
+      // reach getSourcedTokenLimit, so clamp against the env-aware value here.
       const maxInputTokens = isPositiveFiniteNumber(canonical.limits.maxInputTokens)
-        ? canonical.limits.maxInputTokens
+        ? isPositiveFiniteNumber(contextLength)
+          ? Math.min(canonical.limits.maxInputTokens, contextLength)
+          : canonical.limits.maxInputTokens
         : contextLength;
       const maxOutputTokens = isPositiveFiniteNumber(synced?.limit_output)
         ? synced.limit_output
