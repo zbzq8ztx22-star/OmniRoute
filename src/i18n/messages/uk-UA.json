@@ -14076,7 +14076,12 @@
     "hour": "година",
     "day": "день",
     "unknownModel": "невідомо",
-    "pending": "в очікуванні"
+    "pending": "в очікуванні",
+    "allApiKeys": "All API keys",
+    "mcp": "MCP",
+    "mcpTool": "MCP tool",
+    "scope": "Scope",
+    "apiKey": "API key"
   },
   "metadata": {
     "compressionTitle": "Стиснення",

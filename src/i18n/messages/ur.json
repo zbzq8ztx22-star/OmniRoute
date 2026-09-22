@@ -14076,7 +14076,12 @@
     "hour": "گھنٹہ",
     "day": "دن",
     "unknownModel": "نامعلوم",
-    "pending": "زیر التواء"
+    "pending": "زیر التواء",
+    "allApiKeys": "All API keys",
+    "mcp": "MCP",
+    "mcpTool": "MCP tool",
+    "scope": "Scope",
+    "apiKey": "API key"
   },
   "metadata": {
     "compressionTitle": "کمپریشن",
