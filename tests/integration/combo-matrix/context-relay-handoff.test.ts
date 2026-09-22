@@ -42,9 +42,8 @@ const {
 
 // Import DB helpers AFTER harness so they share the same DB instance (DATA_DIR
 // is set by the harness before any import triggers DB init).
-const { recordSessionModelUsage, getHandoff } = await import(
-  "../../../src/lib/db/contextHandoffs.ts"
-);
+const { recordSessionModelUsage, getHandoff } =
+  await import("../../../src/lib/db/contextHandoffs.ts");
 
 // A minimal but valid handoff-JSON blob that parseHandoffJSON will accept.
 // Must have at minimum a non-empty "summary" field.
@@ -84,7 +83,7 @@ function relayRequest(withSessionId = true) {
 
 // Install a recording fetch that:
 //   • returns a valid handoff JSON (wrapped in an OpenAI completion) for the
-//     internal summary request (identified by _omnirouteInternalRequest flag in body)
+//     second upstream call, which is the internal summary request
 //   • returns a normal OpenAI response for every other call
 function installHandoffAwareFetch() {
   h.calls.length = 0;
@@ -114,8 +113,9 @@ function installHandoffAwareFetch() {
     };
     h.calls.push(call);
 
-    // Return valid handoff JSON for the internal summary generation request
-    if (bodyObj._omnirouteInternalRequest === "universal-handoff") {
+    // The internal marker is stripped before fetch; the first call is the main
+    // request and every later call belongs to summary generation or its retry.
+    if (call.index > 0) {
       return buildOpenAIResponse(SCRIPTED_SUMMARY_JSON);
     }
 
@@ -172,10 +172,7 @@ test("context-relay universal handoff: fires and writes handoff record on model 
 
   // Wait for the setImmediate + generateUniversalHandoffAsync to complete and
   // write the DB record. Poll for up to 2 s — typically resolves in <100 ms.
-  const handoff = await waitFor(
-    () => getHandoff(SESSION_ID, COMBO_NAME),
-    2000
-  );
+  const handoff = await waitFor(() => getHandoff(SESSION_ID, COMBO_NAME), 2000);
 
   assert.ok(
     handoff !== null,
@@ -185,16 +182,8 @@ test("context-relay universal handoff: fires and writes handoff record on model 
     typeof handoff!.summary === "string" && handoff!.summary.length > 0,
     `handoff.summary must be non-empty; got: ${JSON.stringify(handoff!.summary)}`
   );
-  assert.equal(
-    handoff!.comboName,
-    COMBO_NAME,
-    "handoff must be keyed to the correct combo"
-  );
-  assert.equal(
-    handoff!.sessionId,
-    SESSION_ID,
-    "handoff must be keyed to the correct session"
-  );
+  assert.equal(handoff!.comboName, COMBO_NAME, "handoff must be keyed to the correct combo");
+  assert.equal(handoff!.sessionId, SESSION_ID, "handoff must be keyed to the correct session");
 
   // Extra dispatch observable: main (index 0) + summary (index ≥ 1).
   assert.ok(

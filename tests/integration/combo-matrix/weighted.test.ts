@@ -5,6 +5,7 @@ import { createComboRoutingHarness } from "../_comboRoutingHarness.ts";
 
 const h = await createComboRoutingHarness("combo-weighted");
 const { BaseExecutor, combosDb, handleChat, buildRequest, seedConnection, resetStorage } = h;
+const rateLimitManager = await import("../../../open-sse/services/rateLimitManager.ts");
 
 function body(model: string) {
   return { model, stream: false, messages: [{ role: "user", content: "w" }] };
@@ -16,6 +17,7 @@ test.beforeEach(async () => {
 });
 test.afterEach(async () => {
   BaseExecutor.RETRY_CONFIG.delayMs = h.originalRetryDelayMs;
+  await rateLimitManager.__resetRateLimitManagerForTests();
   await resetStorage();
 });
 test.after(async () => {
@@ -23,15 +25,24 @@ test.after(async () => {
 });
 
 test("weighted: 70/30 weights produce roughly proportional distribution", async () => {
-  await seedConnection("openai", { apiKey: "sk-openai-w" });
-  await seedConnection("claude", { apiKey: "sk-claude-w" });
+  const openaiConnection = await seedConnection("openai", { apiKey: "sk-openai-w" });
+  const claudeConnection = await seedConnection("claude", { apiKey: "sk-claude-w" });
+  await rateLimitManager.initializeRateLimits();
+  rateLimitManager.disableRateLimitProtection(openaiConnection.id);
+  rateLimitManager.disableRateLimitProtection(claudeConnection.id);
   await combosDb.createCombo({
     name: "m-weighted",
     strategy: "weighted",
     config: { maxRetries: 0, retryDelayMs: 0, stickyWeightedLimit: 1 },
     models: [
       { id: "w-openai", kind: "model", providerId: "openai", model: "gpt-4o-mini", weight: 70 },
-      { id: "w-claude", kind: "model", providerId: "claude", model: "claude-sonnet-4-6", weight: 30 },
+      {
+        id: "w-claude",
+        kind: "model",
+        providerId: "claude",
+        model: "claude-sonnet-4-6",
+        weight: 30,
+      },
     ],
   });
   h.installRecordingFetch();
